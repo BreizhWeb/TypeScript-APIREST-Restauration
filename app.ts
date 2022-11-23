@@ -2,8 +2,9 @@ import { ControlerAliment } from "./controller/controllerAliment";
 import { ControlerPlat } from "./controller/controllerPlat";
 
 const mongoose = require('mongoose');
-const express = require('express')
+const express = require('express');
 const bodyParser = require('body-parser');
+const jwt = require('jsonwebtoken');
 
 const app = express();
 let controllerAliment:ControlerAliment = new ControlerAliment();
@@ -43,6 +44,7 @@ app.use('/docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
 app.use(express.json());
 app.use(bodyParser.urlencoded({ extended: true }));
+app.use(bodyParser.json());
 
 app.use((req,res,next) => {
     res.setHeader('Access-Control-Allow-Origin', '*');
@@ -51,7 +53,22 @@ app.use((req,res,next) => {
     next();
 })
 
-app.get('/', (req, res) => res.send('🏠'));
+function authenticateToken(req, res, next) {
+    const authHeader = req.headers['authorization']
+    const token = authHeader && authHeader.split(' ')[1]
+  
+    if (token == null) return res.sendStatus(401)
+  
+    jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, (err, user) => {
+      if (err) {
+        return res.sendStatus(401)
+      }
+      req.user = user;
+      next();
+    });
+  }
+
+app.get('/', authenticateToken, (req, res) => res.send('🏠'));
 /**
  * @swagger
  * components:
@@ -97,24 +114,7 @@ app.get('/', (req, res) => res.send('🏠'));
 *         content:
 *           application/json:
 *             schema:
-*               type: object
-*               properties:
-*                 nom:
-*                   type: string
-*                   description: Le nom de l'aliment
-*                   example: Tomate
-*                 type:
-*                   type: string
-*                   description: Le type d'aliment.
-*                   example: Légume
-*                 quantite:
-*                   type: integer
-*                   description: La quantite de l'aliment.
-*                   example: 4
-*                 date:
-*                   type: date
-*                   description: La date de l'aliment.
-*                   example: 2022-10-26T07:21:54.302+00:00
+*               $ref: '#/components/schemas/Aliment'
 */
 app.get('/aliments',(req,res)=>controllerAliment.getAliments(req,res));
 
@@ -225,7 +225,7 @@ app.delete('/aliments/:id',(req,res)=>controllerAliment.deleteAliment(req,res));
  * @swagger
  * components:
  *   schemas:
- *     Plats:
+ *     Plat:
  *       type: object
  *       required:
  *         - nom
@@ -242,22 +242,24 @@ app.delete('/aliments/:id',(req,res)=>controllerAliment.deleteAliment(req,res));
  *         prix:
  *           type: number
  *           descripton: prix du plat
- *         aliment:
+ *         aliments:
  *           type: array
- *           descripton: aliment du plat
+ *           descripton: différent aliment du plat
  *           items:
- *           properties:
- *             nom:
- *               type: string:
- *               descripton: nom de l'aliment
- *             quantite:
- *               type: integer:
- *               descripton: quantite de l'aliment
+ *             type: object
+ *             properties:
+ *               nom:
+ *                 type: string
+ *                 descripton: nom de l'aliment
+ *               quantite:
+ *                 type: integer
+ *                 descripton: quantite de l'aliment
  *       example:
  *         nom: Reine
  *         type: Pizza
  *         prix: 11.50
- *         aliment: []
+ *         aliment: [{
+ *         nom: Tomate, quantite: 2},{nom: Jambon, quantite: 1}]
  *
  */
 
@@ -274,33 +276,112 @@ app.delete('/aliments/:id',(req,res)=>controllerAliment.deleteAliment(req,res));
 *         content:
 *           application/json:
 *             schema:
-*               type: object
-*               properties:
-*                 nom:
-*                   type: string
-*                   description: nom du plat
-*                 type:
-*                   type: string
-*                   description: type du plat
-*                 prix:
-*                   type: integer
-*                   descripton: prix du plat
-*                 aliment:
-*                   type: array
-*                   descripton: aliment du plat
-*                   items:
-*                   properties:
-*                     nom:
-*                       type: string:
-*                       descripton: nom de l'aliment
-*                     quantite:
-*                       type: integer:
-*                       descripton: quantite de l'aliment
+*               $ref: '#/components/schemas/Plat'
 */
 app.get('/plats',(req,res)=>controllerPlat.getPlats(req,res));
+
+/**
+ * @swagger
+ * /plats/{id}:
+ *   get:
+ *     summary:  Retourne le plat
+ *     tags: [Plats]
+ *     parameters:
+ *       - in : path
+ *         name: id
+ *         description: id de l'aliment
+ *         schema:
+ *           type: string
+ *         required: true
+ *     responses:
+ *       200:
+ *         description: Retourne l'aliment de l'id
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Plat'
+ *       400:
+ *         description: Aliment non trouvé
+ */
 app.get('/plats/:id',(req,res)=>controllerPlat.getPlat(req,res));
+
+/**
+ * @swagger
+ * /plats:
+ *   post:
+ *     summary: Ajoute un plat
+ *     tags: [Plats]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/Plats'
+ *     responses:
+ *       200:
+ *         description: Ajout réussi
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Plats'
+ *       500:
+ *         description: Erreur serveur
+ */
 app.post('/plats',(req,res)=>controllerPlat.postPlat(req,res));
+
+/**
+ * @swagger
+ * /plats/{id}:
+ *   put:
+ *     summary: Modifier un plat
+ *     tags: [Plats]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         schema:
+ *           type: string
+ *         required: true
+ *         description: id du plat
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/Plat'
+ *     responses:
+ *       200:
+ *         decsription: aliment modifié
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Plat'
+ *       404:
+ *         description: plat non existant
+ *       500:
+ *         description: Server introuvable
+ *
+ */
 app.put('/plats/:id',(req,res)=>controllerPlat.updatePlat(req,res));
+
+/**
+ * @swagger
+ *  /plats/{id}:
+ *    delete:
+ *      summary: Supprime le plat
+ *      tags: [Plats]
+ *      parameters:
+ *        - in: path
+ *          name: id
+ *          description: id du plat
+ *          required: true
+ *          schema:
+ *            type: string
+ *      responses:
+ *        200:
+ *          description: plat supprimé
+ *        404:
+ *          description: plat non trouvé
+ */
 app.delete('/plats/:id',(req,res)=>controllerPlat.deletePlat(req,res)); 
 
 app.listen(3001,()=>{
