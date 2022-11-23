@@ -3,7 +3,7 @@ import mongoose, { Schema } from "mongoose";
 const alimentSchema = new Schema({​
     nom:  String, 
     type: String,​
-    quantite:   String,​
+    quantite:   Number,​
     date: { type: Date, default: Date.now },​
 
   });​​
@@ -43,4 +43,3 @@ const AlimentModel= mongoose.model('Aliment', alimentSchema);
 
 
 
-  

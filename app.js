@@ -14,7 +14,7 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
     function verb(n) { return function (v) { return step([n, v]); }; }
     function step(op) {
         if (f) throw new TypeError("Generator is already executing.");
-        while (_) try {
+        while (g && (g = 0, op[0] && (_ = 0)), _) try {
             if (f = 1, y && (t = op[0] & 2 ? y["return"] : op[0] ? y["throw"] || ((t = y["return"]) && t.call(y), 0) : y.next) && !(t = t.call(y, op[1])).done) return t;
             if (y = 0, t) op = [op[0] & 2, t.value];
             switch (op[0]) {
@@ -44,6 +44,29 @@ var bodyParser = require('body-parser');
 var app = express();
 var controllerAliment = new controllerAliment_1.ControlerAliment();
 var controllerPlat = new controllerPlat_1.ControlerPlat();
+var swaggerJSDoc = require('swagger-jsdoc');
+var swaggerUi = require('swagger-ui-express');
+var swaggerDefinition = {
+    openapi: '3.0.0',
+    info: {
+        title: 'Express API for JSONPlaceholder',
+        version: '1.0.0',
+        description: 'This is a REST API application made with Express. It retrieves data from JSONPlaceholder.'
+    },
+    servers: [
+        {
+            url: 'http://localhost:3001/',
+            description: 'Development server',
+        },
+    ],
+};
+var options = {
+    swaggerDefinition: swaggerDefinition,
+    // Paths to files containing OpenAPI definitions
+    apis: ['./*.js', './controller/*.js'],
+};
+var swaggerSpec = swaggerJSDoc(options);
+app.use('/docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 /**
  *
  * On utilise express pour gérer notre serveur http, toute la doc se trouve ici
@@ -58,18 +81,252 @@ app.use(function (req, res, next) {
     next();
 });
 app.get('/', function (req, res) { return res.send('🏠'); });
+/**
+ * @swagger
+ * components:
+ *   schemas:
+ *     Aliment:
+ *       type: object
+ *       required:
+ *         - nom
+ *         - type
+ *         - quantite
+ *         - date
+ *       properties:
+ *         nom:
+ *           type: string
+ *           description: nom de l'aliment
+ *         type:
+ *           type: string
+ *           description: type d'aliment
+ *         quantite:
+ *           type: integer
+ *           descripton: quantite de l'aliment
+ *         date:
+ *           type: date
+ *           descripton: date de l'aliment
+ *       example:
+ *         nom: Tomate
+ *         type: Legume
+ *         quantite: 4
+ *         date: 2022-10-26T07:21:54.302Z
+ *
+ */
+/**
+* @swagger
+* /aliments:
+*   get:
+*     summary: Retourne la liste des aliments
+*     tags: [Aliments]
+*     description:
+*     responses:
+*       200:
+*         description: Liste des aliments.
+*         content:
+*           application/json:
+*             schema:
+*               type: object
+*               properties:
+*                 nom:
+*                   type: string
+*                   description: Le nom de l'aliment
+*                   example: Tomate
+*                 type:
+*                   type: string
+*                   description: Le type d'aliment.
+*                   example: Légume
+*                 quantite:
+*                   type: integer
+*                   description: La quantite de l'aliment.
+*                   example: 4
+*                 date:
+*                   type: date
+*                   description: La date de l'aliment.
+*                   example: 2022-10-26T07:21:54.302+00:00
+*/
 app.get('/aliments', function (req, res) { return controllerAliment.getAliments(req, res); });
+/**
+ * @swagger
+ * /aliments/{id}:
+ *   get:
+ *     summary:  Retourne l'aliment de l'id
+ *     tags: [Aliments]
+ *     parameters:
+ *       - in : path
+ *         name: id
+ *         description: id de l'aliment
+ *         schema:
+ *           type: string
+ *         required: true
+ *     responses:
+ *       200:
+ *         description: Retourne l'aliment de l'id
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Aliment'
+ *       400:
+ *         description: Aliment non trouvé
+ */
 app.get('/aliments/:id', function (req, res) { return controllerAliment.getAliment(req, res); });
+/**
+ * @swagger
+ * /aliments:
+ *   post:
+ *     summary: Ajoute un aliment
+ *     tags: [Aliments]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/Aliment'
+ *     responses:
+ *       200:
+ *         description: Ajout réussi
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Aliment'
+ *       500:
+ *         description: Erreur serveur
+ */
 app.post('/aliments', function (req, res) { return controllerAliment.postAliment(req, res); });
+/**
+ * @swagger
+ * /aliments/{id}:
+ *   put:
+ *     summary: Modifier un aliment
+ *     tags: [Aliments]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         schema:
+ *           type: string
+ *         required: true
+ *         description: id de l'aliment
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/Aliment'
+ *     responses:
+ *       200:
+ *         decsription: aliment modifié
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Aliment'
+ *       404:
+ *         description: aliment non existant
+ *       500:
+ *         description: Server introuvable
+ *
+ */
 app.put('/aliments/:id', function (req, res) { return controllerAliment.updateAliment(req, res); });
+/**
+ * @swagger
+ *  /aliments/{id}:
+ *    delete:
+ *      summary: Supprime l'aliment
+ *      tags: [Aliments]
+ *      parameters:
+ *        - in: path
+ *          name: id
+ *          description: id de l'aliment
+ *          required: true
+ *          schema:
+ *            type: string
+ *      responses:
+ *        200:
+ *          description: aliment supprimé
+ *        404:
+ *          description: aliment non trouvé
+ */
 app.delete('/aliments/:id', function (req, res) { return controllerAliment.deleteAliment(req, res); });
+/**
+ * @swagger
+ * components:
+ *   schemas:
+ *     Plats:
+ *       type: object
+ *       required:
+ *         - nom
+ *         - type
+ *         - prix
+ *         - aliment
+ *       properties:
+ *         nom:
+ *           type: string
+ *           description: nom du plat
+ *         type:
+ *           type: string
+ *           description: type du plat
+ *         prix:
+ *           type: number
+ *           descripton: prix du plat
+ *         aliment:
+ *           type: array
+ *           descripton: aliment du plat
+ *           items:
+ *           properties:
+ *             nom:
+ *               type: string:
+ *               descripton: nom de l'aliment
+ *             quantite:
+ *               type: integer:
+ *               descripton: quantite de l'aliment
+ *       example:
+ *         nom: Reine
+ *         type: Pizza
+ *         prix: 11.50
+ *         aliment: []
+ *
+ */
+/**
+* @swagger
+* /plats:
+*   get:
+*     summary: Retourne la liste des plats
+*     tags: [Plats]
+*     description:
+*     responses:
+*       200:
+*         description: Liste des plats.
+*         content:
+*           application/json:
+*             schema:
+*               type: object
+*               properties:
+*                 nom:
+*                   type: string
+*                   description: nom du plat
+*                 type:
+*                   type: string
+*                   description: type du plat
+*                 prix:
+*                   type: integer
+*                   descripton: prix du plat
+*                 aliment:
+*                   type: array
+*                   descripton: aliment du plat
+*                   items:
+*                   properties:
+*                     nom:
+*                       type: string:
+*                       descripton: nom de l'aliment
+*                     quantite:
+*                       type: integer:
+*                       descripton: quantite de l'aliment
+*/
 app.get('/plats', function (req, res) { return controllerPlat.getPlats(req, res); });
 app.get('/plats/:id', function (req, res) { return controllerPlat.getPlat(req, res); });
 app.post('/plats', function (req, res) { return controllerPlat.postPlat(req, res); });
 app.put('/plats/:id', function (req, res) { return controllerPlat.updatePlat(req, res); });
 app.delete('/plats/:id', function (req, res) { return controllerPlat.deletePlat(req, res); });
-app.listen(3000, function () {
-    "Serveur listening on port :3000";
+app.listen(3001, function () {
+    "Serveur listening on port :3001";
 });
 function main() {
     return __awaiter(this, void 0, void 0, function () {

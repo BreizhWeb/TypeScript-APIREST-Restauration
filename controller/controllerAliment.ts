@@ -1,14 +1,4 @@
 import { Aliment } from "../models/aliments";
-
-
-/* Controller qui nous servira par la suite à vérifier que :
-* 
-* La requete contient les élements demandés (id dans le cas d'un get, un formulaire post complet,etc...)
-* 
-* L'appel est bien authentifié
-* 
-* Pour le moment nous avons un controlerAliment, mais nous pourrons faire évoluer le nom du controller plus tard
-*/
 export class ControlerAliment{
     
     public async getAliments(req,res){
@@ -41,3 +31,4 @@ export class ControlerAliment{
         res.send(listeAliments);
     }
 }
+

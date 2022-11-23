@@ -46,4 +46,3 @@ const PlatModel= mongoose.model('Plat', platSchema);
 
 
 
-  
